@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imperial to Metric CSV Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            margin: 30px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: rgba(102, 126, 234, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-container {
+            margin: 30px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 10px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .file-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+            text-align: left;
+        }
+
+        .file-info h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .file-stats {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+            border: 1px solid #f5c6cb;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Convert your CSV files from Imperial to Metric</h1>
+        <p class="subtitle">Convert Imperial to Metric (multiply by 25.4) - Columns G onwards only</p>
+        
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Drop your CSV file here</div>
+            <div class="upload-subtext">or click to browse</div>
+        </div>
+        
+        <input type="file" id="fileInput" accept=".csv" multiple>
+        
+        <div class="file-info" id="fileInfo">
+            <h3>File Information</h3>
+            <div class="file-stats" id="fileStats"></div>
+        </div>
+        
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div class="success-message" id="successMessage"></div>
+        <div class="error-message" id="errorMessage"></div>
+        
+        <button class="btn" id="convertBtn" onclick="convertFiles()" disabled>
+            Convert & Download
+        </button>
+        
+        <button class="btn" id="downloadAllBtn" onclick="downloadAllFiles()" style="display: none;">
+            Download All Files
+        </button>
+    </div>
+
+    <script>
+        let uploadedFiles = [];
+        let convertedFiles = [];
+
+        // Drag and drop functionality
+        const uploadArea = document.querySelector('.upload-area');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files).filter(file => 
+                file.type === 'text/csv' || file.name.toLowerCase().endsWith('.csv')
+            );
+            if (files.length > 0) {
+                handleFiles(files);
+            } else {
+                showError('Please upload only CSV files.');
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            handleFiles(files);
+        });
+
+        function handleFiles(files) {
+            uploadedFiles = files;
+            displayFileInfo(files);
+            document.getElementById('convertBtn').disabled = false;
+            hideMessages();
+        }
+
+        function displayFileInfo(files) {
+            const fileInfo = document.getElementById('fileInfo');
+            const fileStats = document.getElementById('fileStats');
+            
+            if (files.length === 1) {
+                fileStats.innerHTML = `
+                    <strong>File:</strong> ${files[0].name}<br>
+                    <strong>Size:</strong> ${formatFileSize(files[0].size)}<br>
+                    <strong>Type:</strong> CSV
+                `;
+            } else {
+                const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+                fileStats.innerHTML = `
+                    <strong>Files:</strong> ${files.length} CSV files selected<br>
+                    <strong>Total Size:</strong> ${formatFileSize(totalSize)}<br>
+                    <strong>Files:</strong> ${files.map(f => f.name).join(', ')}
+                `;
+            }
+            
+            fileInfo.style.display = 'block';
+            fileInfo.classList.add('fade-in');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function convertFiles() {
+            if (uploadedFiles.length === 0) return;
+
+            const convertBtn = document.getElementById('convertBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            
+            convertBtn.disabled = true;
+            convertBtn.textContent = 'Converting...';
+            progressContainer.style.display = 'block';
+            hideMessages();
+            
+            convertedFiles = [];
+            
+            try {
+                for (let i = 0; i < uploadedFiles.length; i++) {
+                    const file = uploadedFiles[i];
+                    const progress = ((i + 1) / uploadedFiles.length) * 100;
+                    progressFill.style.width = progress + '%';
+                    
+                    const convertedFile = await convertFile(file);
+                    convertedFiles.push(convertedFile);
+                }
+                
+                if (uploadedFiles.length === 1) {
+                    downloadFile(convertedFiles[0]);
+                    showSuccess(`File converted successfully! Converting ${convertedFiles[0].originalName} to metric units.`);
+                } else {
+                    document.getElementById('downloadAllBtn').style.display = 'inline-block';
+                    showSuccess(`${convertedFiles.length} files converted successfully! Click "Download All Files" to get them.`);
+                }
+                
+            } catch (error) {
+                showError(`Error converting files: ${error.message}`);
+            } finally {
+                convertBtn.disabled = false;
+                convertBtn.textContent = 'Convert & Download';
+                progressContainer.style.display = 'none';
+                progressFill.style.width = '0%';
+            }
+        }
+
+        async function convertFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const csv = e.target.result;
+                        const lines = csv.split('\n');
+                        const convertedLines = [];
+                        
+                        for (let i = 0; i < lines.length; i++) {
+                            const line = lines[i].trim();
+                            if (line === '') {
+                                convertedLines.push(line);
+                                continue;
+                            }
+                            
+                            // Split by comma, handling quoted values
+                            const cells = parseCSVLine(line);
+                            const convertedCells = cells.map((cell, cellIndex) => {
+                                // Skip columns A-F (indices 0-5), only convert from column G onwards (index 6+)
+                                if (cellIndex < 6) {
+                                    return cell; // Return original cell for columns A-F
+                                }
+                                
+                                // Check if the cell contains a number
+                                const trimmedCell = cell.trim();
+                                const num = parseFloat(trimmedCell);
+                                
+                                // If it's a valid number and not in the first row (header), convert it
+                                if (!isNaN(num) && isFinite(num) && i > 0) {
+                                    const converted = num * 25.4;
+                                    // Keep reasonable precision
+                                    return converted % 1 === 0 ? converted.toString() : converted.toFixed(2);
+                                }
+                                return cell; // Return original cell if not a number or is header
+                            });
+                            
+                            // Rejoin the cells, adding quotes if they contain commas
+                            const convertedLine = convertedCells.map(cell => {
+                                if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
+                                    return '"' + cell.replace(/"/g, '""') + '"';
+                                }
+                                return cell;
+                            }).join(',');
+                            
+                            convertedLines.push(convertedLine);
+                        }
+                        
+                        const convertedCSV = convertedLines.join('\n');
+                        const originalName = file.name;
+                        const nameWithoutExt = originalName.replace('.csv', '');
+                        const convertedName = `${nameWithoutExt}_metric.csv`;
+                        
+                        resolve({
+                            content: convertedCSV,
+                            originalName: originalName,
+                            convertedName: convertedName
+                        });
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Error reading file'));
+                reader.readAsText(file);
+            });
+        }
+
+        function parseCSVLine(line) {
+            const cells = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++; // Skip next quote
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    cells.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            cells.push(current);
+            return cells;
+        }
+
+        function downloadFile(fileData) {
+            const blob = new Blob([fileData.content], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileData.convertedName;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        function downloadAllFiles() {
+            convertedFiles.forEach(file => {
+                setTimeout(() => downloadFile(file), 100); // Small delay to prevent browser blocking
+            });
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            successDiv.classList.add('fade-in');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            errorDiv.classList.add('fade-in');
+        }
+
+        function hideMessages() {
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('downloadAllBtn').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
