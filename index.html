@@ -215,10 +215,11 @@
         </button>
         
         <button class="btn" id="downloadAllBtn" onclick="downloadAllFiles()" style="display: none;">
-            Download All Files
+            Download All as ZIP
         </button>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script>
         let uploadedFiles = [];
         let convertedFiles = [];
@@ -321,7 +322,7 @@
                     showSuccess(`File converted successfully! Converting ${convertedFiles[0].originalName} to metric units.`);
                 } else {
                     document.getElementById('downloadAllBtn').style.display = 'inline-block';
-                    showSuccess(`${convertedFiles.length} files converted successfully! Click "Download All Files" to get them.`);
+                    showSuccess(`${convertedFiles.length} files converted successfully! Click "Download All as ZIP" to get them in a single ZIP file.`);
                 }
                 
             } catch (error) {
@@ -439,10 +440,43 @@
             document.body.removeChild(a);
         }
 
-        function downloadAllFiles() {
-            convertedFiles.forEach(file => {
-                setTimeout(() => downloadFile(file), 100); // Small delay to prevent browser blocking
-            });
+        async function downloadAllFiles() {
+            const downloadBtn = document.getElementById('downloadAllBtn');
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = 'Creating ZIP...';
+
+            try {
+                const zip = new JSZip();
+
+                // Add all converted files to the ZIP
+                convertedFiles.forEach(file => {
+                    zip.file(file.convertedName, file.content);
+                });
+
+                // Generate the ZIP file
+                const blob = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 6 }
+                });
+
+                // Download the ZIP file
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'converted_files_metric.zip';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                showSuccess(`Successfully downloaded ZIP file containing ${convertedFiles.length} converted files!`);
+            } catch (error) {
+                showError(`Error creating ZIP file: ${error.message}`);
+            } finally {
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = 'Download All Files';
+            }
         }
 
         function showSuccess(message) {
